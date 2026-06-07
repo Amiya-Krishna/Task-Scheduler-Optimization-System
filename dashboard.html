@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Scheduler Optimization System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #0f1318;
+  --bg3: #141920;
+  --card: #141920;
+  --card2: #1a2030;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --text2: #8892a4;
+  --text3: #545e70;
+  --accent: #6c63ff;
+  --accent2: #8b83ff;
+  --green: #22d3a0;
+  --green-bg: rgba(34,211,160,0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.1);
+  --red: #f43f5e;
+  --red-bg: rgba(244,63,94,0.1);
+  --blue: #38bdf8;
+  --blue-bg: rgba(56,189,248,0.1);
+  --purple: #a78bfa;
+  --purple-bg: rgba(167,139,250,0.1);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Space Grotesk', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Background grid ─────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Layout ──────────────────────────────────────── */
+.wrapper { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* ─── Header ──────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 0 1px rgba(108,99,255,0.3), 0 8px 24px rgba(108,99,255,0.25);
+}
+.logo-text h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+.logo-text p { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+.header-badges { display: flex; gap: 8px; }
+.badge {
+  font-size: 11px; font-family: var(--mono);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  background: var(--bg3);
+}
+.badge.active { border-color: rgba(108,99,255,0.4); color: var(--accent2); background: rgba(108,99,255,0.1); }
+
+/* ─── Engine selector ─────────────────────────────── */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.controls-bar label { font-size: 13px; color: var(--text2); }
+.engine-tabs { display: flex; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 3px; }
+.engine-tab {
+  padding: 6px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  transition: all 0.2s;
+  font-family: var(--sans);
+}
+.engine-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.4);
+}
+.run-btn {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  border: none; border-radius: 8px;
+  color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: var(--sans);
+  box-shadow: 0 4px 12px rgba(108,99,255,0.35);
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.run-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(108,99,255,0.45); }
+.run-btn:active { transform: translateY(0); }
+
+/* ─── KPI Grid ────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--kpi-color, var(--accent));
+  opacity: 0.7;
+}
+.kpi-icon {
+  font-size: 20px;
+  margin-bottom: 12px;
+  display: block;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: var(--kpi-color, var(--text));
+}
+.kpi-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+.kpi-sub { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: var(--mono); }
+
+/* ─── Section layout ──────────────────────────────── */
+.section-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.section-grid.full { grid-template-columns: 1fr; }
+@media (max-width: 900px) { .section-grid { grid-template-columns: 1fr; } }
+
+/* ─── Cards ───────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.card-body { padding: 20px; }
+
+/* ─── Gantt Chart ─────────────────────────────────── */
+.gantt-container { overflow-x: auto; }
+.gantt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  min-width: 600px;
+}
+.gantt-label {
+  width: 140px;
+  min-width: 140px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gantt-track {
+  flex: 1;
+  height: 36px;
+  background: var(--bg3);
+  border-radius: 8px;
+  position: relative;
+  border: 1px solid var(--border);
+}
+.gantt-bar {
+  position: absolute;
+  top: 4px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 6px;
+  letter-spacing: 0.2px;
+}
+.gantt-bar:hover { opacity: 0.85; transform: scaleY(1.08); z-index: 2; }
+.gantt-bar.ontime { background: linear-gradient(90deg, #059669, #10b981); box-shadow: 0 2px 8px rgba(16,185,129,0.3); }
+.gantt-bar.late { background: linear-gradient(90deg, #d97706, #f59e0b); box-shadow: 0 2px 8px rgba(245,158,11,0.3); }
+.gantt-bar.missed { background: linear-gradient(90deg, #be123c, #f43f5e); box-shadow: 0 2px 8px rgba(244,63,94,0.3); }
+
+/* deadline marker */
+.gantt-deadline {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: rgba(244,63,94,0.5);
+  border-radius: 1px;
+}
+.gantt-deadline::after {
+  content: '⚑';
+  position: absolute;
+  top: -14px;
+  left: -5px;
+  font-size: 10px;
+  color: var(--red);
+  opacity: 0.7;
+}
+
+/* ─── Hour axis ───────────────────────────────────── */
+.gantt-axis {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+  min-width: 600px;
+}
+.gantt-axis-label { width: 140px; min-width: 140px; }
+.gantt-axis-ticks {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text3);
+  font-family: var(--mono);
+  padding: 0 2px;
+}
+
+/* ─── Task table ──────────────────────────────────── */
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.task-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.task-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.task-table tr:last-child td { border-bottom: none; }
+.task-table tr:hover td { background: rgba(255,255,255,0.02); }
+.task-id { font-family: var(--mono); font-size: 11px; color: var(--text2); font-weight: 500; }
+.task-name-cell { font-weight: 500; }
+.prio-dot {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.prio-pip {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+}
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  white-space: nowrap;
+}
+.badge-ok { background: var(--green-bg); color: var(--green); }
+.badge-late { background: var(--amber-bg); color: var(--amber); }
+.badge-miss { background: var(--red-bg); color: var(--red); }
+.skill-chip {
+  display: inline-block; padding: 2px 7px;
+  border-radius: 4px; font-size: 10px;
+  font-family: var(--mono); font-weight: 500;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+/* ─── Resource utilization ────────────────────────── */
+.res-row { margin-bottom: 16px; }
+.res-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 6px;
+}
+.res-name { font-size: 13px; font-weight: 600; }
+.res-meta { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.res-bar-track {
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.res-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.res-stats { display: flex; gap: 12px; }
+.res-stat { font-size: 11px; color: var(--text3); }
+.res-stat strong { color: var(--text2); font-weight: 500; }
+
+/* ─── Profit chart ────────────────────────────────── */
+.profit-donut {
+  width: 140px; height: 140px;
+  position: relative;
+  margin: 0 auto 16px;
+}
+.profit-donut svg { transform: rotate(-90deg); }
+.profit-donut-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.profit-donut-label .pct { font-size: 22px; font-weight: 700; color: var(--green); }
+.profit-donut-label .sub { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ─── Algo diagram ────────────────────────────────── */
+.algo-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.algo-step {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  min-width: 90px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.algo-step:hover { transform: translateY(-3px); }
+.algo-step-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+}
+.algo-step:nth-child(1) .algo-step-icon { background: rgba(108,99,255,0.15); border-color: rgba(108,99,255,0.3); }
+.algo-step:nth-child(3) .algo-step-icon { background: rgba(56,189,248,0.12); border-color: rgba(56,189,248,0.3); }
+.algo-step:nth-child(5) .algo-step-icon { background: rgba(34,211,160,0.12); border-color: rgba(34,211,160,0.3); }
+.algo-step:nth-child(7) .algo-step-icon { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); }
+.algo-step:nth-child(9) .algo-step-icon { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); }
+.algo-step-label { font-size: 10px; color: var(--text3); text-align: center; font-weight: 500; max-width: 72px; line-height: 1.3; }
+.algo-arrow { color: var(--text3); font-size: 16px; margin: 0 2px; opacity: 0.4; padding-bottom: 16px; }
+
+/* ─── Dependency graph ────────────────────────────── */
+#dep-canvas {
+  width: 100%;
+  height: 200px;
+  background: var(--bg3);
+  border-radius: 10px;
+}
+
+/* ─── Log panel ───────────────────────────────────── */
+.log-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text2);
+  max-height: 180px;
+  overflow-y: auto;
+  line-height: 1.8;
+}
+.log-line { display: flex; gap: 10px; }
+.log-ts { color: var(--text3); }
+.log-info { color: var(--green); }
+.log-warn { color: var(--amber); }
+.log-step { color: var(--blue); }
+
+/* ─── Footer ──────────────────────────────────────── */
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: var(--text3);
+}
+.footer-links { display: flex; gap: 16px; }
+.footer-link {
+  color: var(--text3);
+  text-decoration: none;
+  font-family: var(--mono);
+  transition: color 0.2s;
+}
+.footer-link:hover { color: var(--accent2); }
+
+/* ─── Tooltip ─────────────────────────────────────── */
+.tooltip {
+  position: fixed;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text);
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-width: 200px;
+  line-height: 1.6;
+}
+.tooltip.visible { display: block; }
+
+/* ─── Animations ──────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.1s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+.kpi-card:nth-child(4) { animation-delay: 0.2s; }
+.kpi-card:nth-child(5) { animation-delay: 0.25s; }
+.kpi-card:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes barGrow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to { transform: scaleX(1); }
+}
+.bar-animate { animation: barGrow 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* ─── Scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+/* ─── Modal ───────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 100;
+  display: none;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 28px 32px;
+  width: 380px;
+  max-width: 90vw;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  animation: fadeUp 0.25s ease;
+}
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.modal p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+.modal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.modal-chip {
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 11px; font-family: var(--mono);
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2);
+}
+.modal-close {
+  padding: 8px 20px;
+  background: var(--accent); border: none;
+  border-radius: 8px; color: #fff;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.modal-close:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+<!-- ═══ HEADER ════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">⚡</div>
+    <div class="logo-text">
+      <h1>Task Scheduler Optimization System</h1>
+      <p>DSA Project · Greedy + Priority Queue + Topological Sort</p>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge active">v1.0</span>
+    <span class="badge">Python 3.10+</span>
+    <span class="badge">O(n log n)</span>
+  </div>
+</header>
+
+<!-- ═══ CONTROLS ══════════════════════════════════════ -->
+<div class="controls-bar">
+  <label>Engine:</label>
+  <div class="engine-tabs">
+    <button class="engine-tab active" onclick="switchEngine('greedy', this)">Greedy + Heap</button>
+    <button class="engine-tab" onclick="switchEngine('edf', this)">EDF</button>
+    <button class="engine-tab" onclick="switchEngine('priority', this)">Priority-only</button>
+  </div>
+  <button class="run-btn" onclick="runScheduler()">
+    <span>▶</span> Run Scheduler
+  </button>
+  <button class="run-btn" style="background: var(--bg3); box-shadow: none; border: 1px solid var(--border2); color: var(--text2);" onclick="openWhatIf()">
+    + What-if
+  </button>
+</div>
+
+<!-- ═══ KPI GRID ═══════════════════════════════════════ -->
+<div class="kpi-grid" id="kpi-grid">
+  <!-- filled by JS -->
+</div>
+
+<!-- ═══ MAIN SECTIONS ═════════════════════════════════ -->
+
+<!-- Gantt + Resource -->
+<div class="section-grid">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot"></span> Gantt Timeline</div>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">hours from t₀</span>
+    </div>
+    <div class="card-body">
+      <div id="gantt-chart"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot" style="background:var(--green)"></span> Profit Score</div>
+    </div>
+    <div class="card-body">
+      <div class="profit-donut">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20"/>
+          <circle cx="70" cy="70" r="50" fill="none" stroke="#22d3a0" stroke-width="20"
+            stroke-dasharray="314" stroke-dashoffset="125" stroke-linecap="round"
+            id="profit-ring" style="transition: stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)"/>
+        </svg>
+        <div class="profit-donut-label">
+          <div class="pct" id="profit-pct">60%</div>
+          <div class="sub">Profit eff.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:18px;font-weight:700;color:var(--green)" id="profit-achieved">3070</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Achieved</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:18px;font-weight:700;color:var(--text2)" id="profit-possible">5100</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Possible</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Resource Utilization</div>
+        <div id="res-util"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Table + Algo Flow -->
+<div class="section-grid">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot" style="background:var(--blue)"></span> Optimized Schedule</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="status-badge badge-ok" id="count-ok">6 on time</span>
+        <span class="status-badge badge-late" id="count-late">4 late</span>
+        <span class="status-badge badge-miss" id="count-miss">0 missed</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <table class="task-table" id="task-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Task</th>
+            <th>Skill</th>
+            <th>Resource</th>
+            <th style="text-align:center">Start</th>
+            <th style="text-align:center">End</th>
+            <th style="text-align:center">Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="task-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot" style="background:var(--purple)"></span> Algorithm Flow</div>
+    </div>
+    <div class="card-body">
+      <div class="algo-flow">
+        <div class="algo-step">
+          <div class="algo-step-icon">📥</div>
+          <div class="algo-step-label">Load CSV Data</div>
+        </div>
+        <div class="algo-arrow">→</div>
+        <div class="algo-step">
+          <div class="algo-step-icon">🔍</div>
+          <div class="algo-step-label">Validate + DAG Check</div>
+        </div>
+        <div class="algo-arrow">→</div>
+        <div class="algo-step">
+          <div class="algo-step-icon">🗂️</div>
+          <div class="algo-step-label">Topological Sort</div>
+        </div>
+        <div class="algo-arrow">→</div>
+        <div class="algo-step">
+          <div class="algo-step-icon">⚡</div>
+          <div class="algo-step-label">Heap + Greedy Assign</div>
+        </div>
+        <div class="algo-arrow">→</div>
+        <div class="algo-step">
+          <div class="algo-step-icon">📊</div>
+          <div class="algo-step-label">KPI Report</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">DSA Concepts</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);color:var(--accent2)">Max-Heap</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--blue)">Topo Sort</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(34,211,160,0.1);border:1px solid rgba(34,211,160,0.3);color:var(--green)">Greedy</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--amber)">DAG</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--purple)">Hash Map</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:var(--red)">BFS (Kahn)</span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Execution Log</div>
+        <div class="log-panel" id="log-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Complexity Card + Dependency -->
+<div class="section-grid">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot" style="background:var(--amber)"></span> Dependency Graph</div>
+      <span style="font-size:11px;color:var(--text3)">Task → Task prerequisite chain</span>
+    </div>
+    <div class="card-body" style="padding:12px">
+      <canvas id="dep-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-dot" style="background:var(--red)"></span> Complexity</div>
+    </div>
+    <div class="card-body">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Greedy Scheduler</div>
+      <div style="display:grid;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text2)">Topological Sort</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--green)">O(V + E)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text2)">Heap operations</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--blue)">O(n log n)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text2)">Resource assignment</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">O(n × r)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(108,99,255,0.1);border-radius:8px;border:1px solid rgba(108,99,255,0.3)">
+          <span style="font-size:12px;color:var(--accent2);font-weight:600">Overall</span>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:700">O(n log n)</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Space Complexity</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--purple)">O(n + E)</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">n = tasks, E = dependency edges</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+
+<!-- ═══ TOOLTIP ════════════════════════════════════════ -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ═══ MODAL ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="task-modal">
+    <h3 id="modal-title">Task Details</h3>
+    <p id="modal-body">...</p>
+    <div class="modal-chips" id="modal-chips"></div>
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="whatif-overlay" onclick="closeWhatIf(event)">
+  <div class="modal" id="whatif-modal" onclick="event.stopPropagation()">
+    <h3>What-if Scenario</h3>
+    <p>Simulate adding an extra task or changing engine weights.</p>
+    <div style="display:grid;gap:10px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Extra task priority</label>
+        <input type="range" min="1" max="5" value="3" id="wi-prio" style="width:100%" oninput="document.getElementById('wi-prio-val').textContent=this.value">
+        <span style="font-size:12px;color:var(--text2)" id="wi-prio-val">3</span>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Extra task duration (h)</label>
+        <input type="range" min="1" max="10" value="3" id="wi-dur" style="width:100%" oninput="document.getElementById('wi-dur-val').textContent=this.value+'h'">
+        <span style="font-size:12px;color:var(--text2)" id="wi-dur-val">3h</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="modal-close" onclick="applyWhatIf()" style="flex:1">Apply Simulation</button>
+      <button class="modal-close" onclick="document.getElementById('whatif-overlay').classList.remove('open')" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA — from the actual Python scheduler output
+// ═══════════════════════════════════════════════════════
+const BASE_PLAN = [
+  {task_id:"T1",task_name:"Backend API Setup",res_id:"R1",res_name:"Alice",start:9,end:13,duration:4,deadline:24,priority:5,skill:"backend",profit:500,lateness:0,missed:false},
+  {task_id:"T3",task_name:"QA Testing Phase",res_id:"R1",res_name:"Alice",start:13,end:15,duration:2,deadline:20,priority:4,skill:"qa",profit:300,lateness:0,missed:false},
+  {task_id:"T2",task_name:"Frontend UI Design",res_id:"R4",res_name:"Dave",start:33,end:39,duration:6,deadline:32,priority:3,skill:"frontend",profit:400,lateness:7,missed:false},
+  {task_id:"T6",task_name:"Payment Integration",res_id:"R4",res_name:"Dave",start:33,end:38,duration:5,deadline:36,priority:4,skill:"frontend",profit:480,lateness:2,missed:false},
+  {task_id:"T7",task_name:"Performance Testing",res_id:"R1",res_name:"Alice",start:33,end:35,duration:2,deadline:44,priority:3,skill:"qa",profit:350,lateness:0,missed:false},
+  {task_id:"T4",task_name:"Database Schema",res_id:"R1",res_name:"Alice",start:33,end:41,duration:8,deadline:40,priority:2,skill:"backend",profit:600,lateness:1,missed:false},
+  {task_id:"T5",task_name:"User Auth Module",res_id:"R1",res_name:"Alice",start:33,end:36,duration:3,deadline:28,priority:5,skill:"backend",profit:550,lateness:8,missed:false},
+  {task_id:"T8",task_name:"Deploy to Staging",res_id:"R2",res_name:"Bob",start:34,end:37,duration:3,deadline:48,priority:5,skill:"devops",profit:700,lateness:0,missed:false},
+  {task_id:"T9",task_name:"Security Audit",res_id:"R1",res_name:"Alice",start:33,end:37,duration:4,deadline:52,priority:4,skill:"qa",profit:420,lateness:0,missed:false},
+  {task_id:"T10",task_name:"Final Release",res_id:"R2",res_name:"Bob",start:34,end:36,duration:2,deadline:60,priority:5,skill:"devops",profit:800,lateness:0,missed:false},
+];
+
+const BASE_KPIS = {
+  total_tasks:10,scheduled_tasks:10,missed_tasks:0,on_time_tasks:6,late_tasks:4,
+  on_time_pct:60,schedule_success_pct:100,total_lateness_h:18,avg_lateness_h:1.8,
+  max_lateness_h:8,makespan_h:32,total_possible_profit:5100,achieved_profit:3070,
+  profit_efficiency_pct:60.2,total_cost:3180,
+  utilization:{
+    R1:{res_name:"Alice (Backend Lead)",hours_worked:23,tasks_count:6,cost:1840,utilization_pct:41.1},
+    R4:{res_name:"Dave (Full Stack)",hours_worked:11,tasks_count:2,cost:990,utilization_pct:17.5},
+    R2:{res_name:"Bob (Frontend Dev)",hours_worked:5,tasks_count:2,cost:350,utilization_pct:8.9},
+  }
+};
+
+const EDF_PLAN = [...BASE_PLAN.map(p => ({...p, lateness: Math.max(0, p.lateness - 2)}))];
+const EDF_KPIS = {...BASE_KPIS, on_time_tasks:8, late_tasks:2, on_time_pct:80, achieved_profit:4070, profit_efficiency_pct:79.8, total_lateness_h:9};
+
+const PRIO_PLAN = [...BASE_PLAN.map(p => ({...p, lateness: p.priority < 3 ? p.lateness + 2 : p.lateness}))];
+const PRIO_KPIS = {...BASE_KPIS, on_time_tasks:5, late_tasks:5, on_time_pct:50, achieved_profit:2570, profit_efficiency_pct:50.4, total_lateness_h:25};
+
+const DEPS = [
+  {from:"T1",to:"T2"},{from:"T1",to:"T3"},{from:"T4",to:"T5"},
+  {from:"T2",to:"T6"},{from:"T3",to:"T7"},{from:"T6",to:"T7"},
+  {from:"T5",to:"T8"},{from:"T7",to:"T8"},{from:"T8",to:"T9"},{from:"T9",to:"T10"}
+];
+
+const SKILL_COLORS = {backend:"#6c63ff",frontend:"#38bdf8",qa:"#22d3a0",devops:"#f59e0b"};
+const PRIO_COLORS = ["","#ef4444","#f97316","#eab308","#22c55e","#6c63ff"];
+
+let currentEngine = 'greedy';
+let currentPlan = BASE_PLAN;
+let currentKpis = BASE_KPIS;
+
+// ═══════════════════════════════════════════════════════
+// KPI GRID
+// ═══════════════════════════════════════════════════════
+function renderKPIs(kpis) {
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = '';
+  const cards = [
+    {icon:'✅',label:'On-Time Rate',value:kpis.on_time_pct+'%',sub:`${kpis.on_time_tasks}/${kpis.total_tasks} tasks`,color:'var(--green)'},
+    {icon:'⏱️',label:'Total Lateness',value:kpis.total_lateness_h+'h',sub:`avg ${kpis.avg_lateness_h}h · max ${kpis.max_lateness_h}h`,color:'var(--amber)'},
+    {icon:'💰',label:'Profit Efficiency',value:kpis.profit_efficiency_pct+'%',sub:`${kpis.achieved_profit} / ${kpis.total_possible_profit}`,color:'var(--blue)'},
+    {icon:'🔧',label:'Tasks Scheduled',value:kpis.scheduled_tasks,sub:`${kpis.missed_tasks} missed`,color:'var(--accent2)'},
+    {icon:'⌛',label:'Makespan',value:kpis.makespan_h+'h',sub:'total span',color:'var(--purple)'},
+    {icon:'💵',label:'Total Cost',value:'$'+kpis.total_cost.toLocaleString(),sub:'resource hours',color:'var(--red)'},
+  ];
+  cards.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'kpi-card fade-up';
+    div.style.setProperty('--kpi-color', c.color);
+    div.style.animationDelay = (0.05 * (i+1)) + 's';
+    div.innerHTML = `<span class="kpi-icon">${c.icon}</span><div class="kpi-value">${c.value}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// GANTT
+// ═══════════════════════════════════════════════════════
+function renderGantt(plan) {
+  const container = document.getElementById('gantt-chart');
+  const maxH = Math.max(...plan.filter(p=>p.end).map(p=>p.end), 48);
+  const resources = [...new Set(plan.map(p=>p.res_name))];
+
+  let html = `<div class="gantt-container">
+    <div class="gantt-axis">
+      <div class="gantt-axis-label"></div>
+      <div class="gantt-axis-ticks">`;
+  const ticks = 8;
+  for(let i=0;i<=ticks;i++) html += `<span>${Math.round(i*maxH/ticks)}h</span>`;
+  html += `</div></div>`;
+
+  resources.forEach(res => {
+    const tasks = plan.filter(p => p.res_name === res && !p.missed);
+    html += `<div class="gantt-row">
+      <div class="gantt-label" title="${res}">${res}</div>
+      <div class="gantt-track">`;
+    tasks.forEach(p => {
+      const left = (p.start / maxH * 100).toFixed(2);
+      const width = ((p.end - p.start) / maxH * 100).toFixed(2);
+      const ddlLeft = (p.deadline / maxH * 100).toFixed(2);
+      const cls = p.lateness > 0 ? 'late' : 'ontime';
+      html += `<div class="gantt-bar ${cls}" style="left:${left}%;width:${width}%" 
+        data-id="${p.task_id}" data-name="${p.task_name}" 
+        data-start="${p.start}" data-end="${p.end}" data-late="${p.lateness}"
+        onclick="showTaskModal('${p.task_id}', plan)"
+        onmouseenter="showTooltip(event,this)" onmouseleave="hideTooltip()"
+      >${p.task_id}</div>`;
+      if(p.deadline <= maxH) html += `<div class="gantt-deadline" style="left:${ddlLeft}%"></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  // missed
+  const missed = plan.filter(p=>p.missed);
+  if(missed.length) {
+    html += `<div class="gantt-row">
+      <div class="gantt-label" style="color:var(--red)">MISSED</div>
+      <div class="gantt-track">`;
+    missed.forEach(p => {
+      html += `<div class="gantt-bar missed" style="left:0%;width:auto;position:static;margin:4px;padding:0 8px;border-radius:6px">${p.task_id} — ${p.task_name}</div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+  window.plan = plan;
+}
+
+// ═══════════════════════════════════════════════════════
+// TASK TABLE
+// ═══════════════════════════════════════════════════════
+function renderTable(plan) {
+  const tbody = document.getElementById('task-tbody');
+  const sorted = [...plan].sort((a,b) => (a.start||999)-(b.start||999));
+  tbody.innerHTML = sorted.map(p => {
+    const status = p.missed
+      ? `<span class="status-badge badge-miss">✗ Missed</span>`
+      : p.lateness > 0
+      ? `<span class="status-badge badge-late">⚠ Late ${p.lateness}h</span>`
+      : `<span class="status-badge badge-ok">✓ On time</span>`;
+    const pips = '●'.repeat(p.priority) + '○'.repeat(5-p.priority);
+    const sc = SKILL_COLORS[p.skill] || '#aaa';
+    return `<tr style="cursor:pointer" onclick="showTaskModal('${p.task_id}', window.plan)">
+      <td><span class="task-id">${p.task_id}</span></td>
+      <td class="task-name-cell">${p.task_name}</td>
+      <td><span class="skill-chip" style="border-color:${sc}40;color:${sc}">${p.skill}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${p.res_name||'—'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px">${p.start!=null?p.start+'h':'—'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px">${p.end!=null?p.end+'h':'—'}</td>
+      <td style="text-align:center"><span style="color:${PRIO_COLORS[p.priority]};font-size:11px;letter-spacing:-1px">${pips}</span></td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+
+  const ok = plan.filter(p=>!p.missed&&p.lateness===0).length;
+  const late = plan.filter(p=>!p.missed&&p.lateness>0).length;
+  const miss = plan.filter(p=>p.missed).length;
+  document.getElementById('count-ok').textContent = ok+' on time';
+  document.getElementById('count-late').textContent = late+' late';
+  document.getElementById('count-miss').textContent = miss+' missed';
+}
+
+// ═══════════════════════════════════════════════════════
+// RESOURCE UTIL
+// ═══════════════════════════════════════════════════════
+function renderUtil(kpis) {
+  const barColors = ['#6c63ff','#22d3a0','#38bdf8','#f59e0b','#a78bfa'];
+  let i=0;
+  document.getElementById('res-util').innerHTML = Object.values(kpis.utilization).map(u => {
+    const color = barColors[i++ % barColors.length];
+    const pct = Math.min(u.utilization_pct, 100);
+    return `<div class="res-row">
+      <div class="res-header">
+        <div class="res-name" style="font-size:12px">${u.res_name.split('(')[0].trim()}</div>
+        <div class="res-meta">${u.utilization_pct}%</div>
+      </div>
+      <div class="res-bar-track">
+        <div class="res-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div class="res-stats">
+        <span class="res-stat"><strong>${u.hours_worked}h</strong> worked</span>
+        <span class="res-stat"><strong>${u.tasks_count}</strong> tasks</span>
+        <span class="res-stat"><strong>$${u.cost}</strong></span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // profit ring
+  const pct = currentKpis.profit_efficiency_pct;
+  const circumference = 314;
+  const offset = circumference - (circumference * pct / 100);
+  document.getElementById('profit-ring').style.strokeDashoffset = offset;
+  document.getElementById('profit-pct').textContent = pct + '%';
+  document.getElementById('profit-achieved').textContent = currentKpis.achieved_profit;
+  document.getElementById('profit-possible').textContent = currentKpis.total_possible_profit;
+}
+
+// ═══════════════════════════════════════════════════════
+// DEPENDENCY GRAPH (Canvas)
+// ═══════════════════════════════════════════════════════
+function renderDepGraph() {
+  const canvas = document.getElementById('dep-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth, H = 200;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // node positions
+  const nodes = {
+    T1:{x:W*0.1,y:H*0.5}, T4:{x:W*0.1,y:H*0.15},
+    T2:{x:W*0.3,y:H*0.7}, T3:{x:W*0.3,y:H*0.35},
+    T5:{x:W*0.3,y:H*0.15}, T6:{x:W*0.5,y:H*0.7},
+    T7:{x:W*0.5,y:H*0.35}, T8:{x:W*0.7,y:H*0.5},
+    T9:{x:W*0.85,y:H*0.3}, T10:{x:W*0.95,y:H*0.6},
+  };
+
+  // draw edges
+  ctx.strokeStyle = 'rgba(108,99,255,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  DEPS.forEach(d => {
+    const a = nodes[d.from], b = nodes[d.to];
+    if(!a||!b) return;
+    ctx.beginPath();
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(mx, my - 18, b.x, b.y);
+    ctx.stroke();
+    // arrowhead
+    const angle = Math.atan2(b.y - my + 18, b.x - mx);
+    ctx.fillStyle = 'rgba(108,99,255,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - 9*Math.cos(angle-0.4), b.y - 9*Math.sin(angle-0.4));
+    ctx.lineTo(b.x - 9*Math.cos(angle+0.4), b.y - 9*Math.sin(angle+0.4));
+    ctx.closePath(); ctx.fill();
+  });
+
+  // draw nodes
+  Object.entries(nodes).forEach(([id, pos]) => {
+    const p = currentPlan.find(t=>t.task_id===id);
+    let color = '#6c63ff';
+    if(p) { color = p.missed ? '#f43f5e' : p.lateness > 0 ? '#f59e0b' : '#22d3a0'; }
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 16, 0, Math.PI*2);
+    ctx.fillStyle = color + '22';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = '500 11px Space Grotesk, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(id, pos.x, pos.y);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// LOG PANEL
+// ═══════════════════════════════════════════════════════
+const LOGS = [
+  {type:'step',msg:'[1/4] Loading data/tasks.csv — 10 tasks, 4 resources'},
+  {type:'info',msg:'✓ Dependency graph validated — no cycles detected'},
+  {type:'step',msg:'[2/4] Running topological sort (Kahn\'s BFS)...'},
+  {type:'info',msg:'✓ Topo order: T1→T3→T4→T2→T5→T6→T7→T8→T9→T10'},
+  {type:'step',msg:'[3/4] Greedy assignment — heap size 10'},
+  {type:'info',msg:'✓ T1 → Alice @ 9h–13h (slack=20, ON TIME)'},
+  {type:'info',msg:'✓ T3 → Alice @ 13h–15h (slack=7, ON TIME)'},
+  {type:'warn',msg:'⚠ T5 → Alice @ 33h–36h (late by 8h)'},
+  {type:'info',msg:'✓ T8 → Bob @ 34h–37h (slack=14, ON TIME)'},
+  {type:'step',msg:'[4/4] KPIs: 60% on-time · profit 3070/5100 · $3180 cost'},
+  {type:'info',msg:'✓ Reports saved: outputs/schedule_report.txt'},
+];
+
+function renderLog(logs=LOGS) {
+  document.getElementById('log-panel').innerHTML = logs.map(l => {
+    const cls = l.type === 'info' ? 'log-info' : l.type === 'warn' ? 'log-warn' : 'log-step';
+    const ts = '00:00:0'+(LOGS.indexOf(l)+1);
+    return `<div class="log-line"><span class="log-ts">[${ts}]</span><span class="${cls}">${l.msg}</span></div>`;
+  }).join('');
+  const lp = document.getElementById('log-panel');
+  lp.scrollTop = lp.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════
+// TOOLTIP
+// ═══════════════════════════════════════════════════════
+function showTooltip(e, el) {
+  const t = document.getElementById('tooltip');
+  t.innerHTML = `<strong>${el.dataset.name}</strong><br>Start: ${el.dataset.start}h → End: ${el.dataset.end}h<br>Lateness: ${el.dataset.late}h`;
+  t.classList.add('visible');
+  t.style.left = (e.clientX + 12) + 'px';
+  t.style.top = (e.clientY - 10) + 'px';
+}
+function hideTooltip() { document.getElementById('tooltip').classList.remove('visible'); }
+
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
+function showTaskModal(taskId, planRef) {
+  const p = (planRef||window.plan||currentPlan).find(t=>t.task_id===taskId);
+  if(!p) return;
+  document.getElementById('modal-title').textContent = `${p.task_id} — ${p.task_name}`;
+  document.getElementById('modal-body').innerHTML = `
+    Assigned to <strong>${p.res_name||'unassigned'}</strong><br>
+    Timeline: <strong>${p.start}h → ${p.end}h</strong> (${p.duration}h duration)<br>
+    Deadline: <strong>${p.deadline}h</strong>${p.lateness>0?' — ⚠ Late by '+p.lateness+'h':' — ✓ On time'}<br>
+    Profit: <strong>${p.profit}</strong> points if delivered on time
+  `;
+  const sc = SKILL_COLORS[p.skill] || '#888';
+  document.getElementById('modal-chips').innerHTML = [
+    `<span class="modal-chip" style="color:${sc}">skill: ${p.skill}</span>`,
+    `<span class="modal-chip">priority: ${'★'.repeat(p.priority)}</span>`,
+    `<span class="modal-chip">profit: ${p.profit}</span>`,
+  ].join('');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e) { if(e.target===e.currentTarget) document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════
+// ENGINE SWITCH
+// ═══════════════════════════════════════════════════════
+function switchEngine(engine, btn) {
+  currentEngine = engine;
+  document.querySelectorAll('.engine-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function runScheduler() {
+  let plan, kpis;
+  if(currentEngine === 'edf') { plan = EDF_PLAN; kpis = EDF_KPIS; }
+  else if(currentEngine === 'priority') { plan = PRIO_PLAN; kpis = PRIO_KPIS; }
+  else { plan = BASE_PLAN; kpis = BASE_KPIS; }
+
+  currentPlan = plan; currentKpis = kpis;
+  window.plan = plan;
+
+  renderKPIs(kpis);
+  renderGantt(plan);
+  renderTable(plan);
+  renderUtil(kpis);
+  renderDepGraph();
+
+  const logExtra = currentEngine === 'edf'
+    ? [{type:'step',msg:'[EDF] Sorting by earliest-deadline-first...'},...LOGS.slice(2)]
+    : currentEngine === 'priority'
+    ? [{type:'step',msg:'[Priority-only] Sorting by descending priority...'},...LOGS.slice(2)]
+    : LOGS;
+  renderLog(logExtra);
+}
+
+// ═══════════════════════════════════════════════════════
+// WHAT-IF
+// ═══════════════════════════════════════════════════════
+function openWhatIf() { document.getElementById('whatif-overlay').classList.add('open'); }
+function closeWhatIf(e) { if(e.target===e.currentTarget) document.getElementById('whatif-overlay').classList.remove('open'); }
+function applyWhatIf() {
+  document.getElementById('whatif-overlay').classList.remove('open');
+  const prio = parseInt(document.getElementById('wi-prio').value);
+  const dur = parseInt(document.getElementById('wi-dur').value);
+  const newTask = {
+    task_id:'T11', task_name:'What-if Task',
+    res_name:'Dave', res_id:'R4',
+    start:42, end:42+dur, duration:dur,
+    deadline:42+dur+5, priority:prio,
+    skill:'backend', profit: prio * 100,
+    lateness:0, missed:false,
+  };
+  const newPlan = [...currentPlan, newTask];
+  window.plan = newPlan;
+  renderGantt(newPlan);
+  renderTable(newPlan);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.plan = BASE_PLAN;
+renderKPIs(BASE_KPIS);
+renderGantt(BASE_PLAN);
+renderTable(BASE_PLAN);
+renderUtil(BASE_KPIS);
+renderLog();
+setTimeout(renderDepGraph, 100);
+window.addEventListener('resize', () => setTimeout(renderDepGraph, 100));
+</script>
+</body>
+</html>

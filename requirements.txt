@@ -1,0 +1,21 @@
+# Task Scheduler Optimization System
+# Core requirements (no heavy ML/OR libraries needed for base version)
+
+# ── Standard Library only for greedy version ──────────
+# heapq, collections, csv, json, os, sys, argparse, time, dataclasses
+# All included in Python 3.10+ standard library — no pip install needed!
+
+# ── Optional: Advanced solver (CP-SAT / ILP) ─────────
+# Uncomment to enable the CP-SAT optimal engine:
+# ortools>=9.8.3296
+
+# ── Optional: Web dashboard backend ──────────────────
+# fastapi>=0.110.0
+# uvicorn>=0.29.0
+# pydantic>=2.6.0
+
+# ── Optional: Testing ─────────────────────────────────
+# pytest>=8.1.0
+
+# ── Optional: Visualization ───────────────────────────
+# matplotlib>=3.8.0   # For Gantt charts in Python

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project outputs (keep folder, ignore generated files)
+outputs/*.txt
+outputs/*.csv
+outputs/*.json
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Keep these
+!outputs/.gitkeep
+!data/tasks.csv
+!data/resources.csv

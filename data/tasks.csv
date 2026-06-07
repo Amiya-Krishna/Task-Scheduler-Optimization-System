@@ -1,0 +1,11 @@
+task_id,task_name,duration_h,deadline_h,priority,skill,depends_on,profit
+T1,Backend API Setup,4,24,5,backend,,500
+T2,Frontend UI Design,6,32,3,frontend,T1,400
+T3,QA Testing Phase,2,20,4,qa,T1,300
+T4,Database Schema,8,40,2,backend,,600
+T5,User Auth Module,3,28,5,backend,T4,550
+T6,Payment Integration,5,36,4,frontend,T2,480
+T7,Performance Testing,2,44,3,qa,T3|T6,350
+T8,Deploy to Staging,3,48,5,devops,T5|T7,700
+T9,Security Audit,4,52,4,qa,T8,420
+T10,Final Release,2,60,5,devops,T9,800

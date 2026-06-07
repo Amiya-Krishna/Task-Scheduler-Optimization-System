@@ -1,0 +1,5 @@
+res_id,res_name,skills,shift_start_h,shift_end_h,max_hours_per_day,hourly_cost
+R1,Alice (Backend Lead),backend|qa,9,17,8,80
+R2,Bob (Frontend Dev),frontend|devops,10,18,8,70
+R3,Carol (QA Engineer),qa|devops,8,16,8,60
+R4,Dave (Full Stack),backend|frontend|devops,9,18,9,90

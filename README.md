@@ -239,8 +239,6 @@ for tid in topo_order:
 
 ---
 
-## 🖼️ Screenshots to Capture for GitHub
-
 ## Screenshots
 
 ### 🟢 Greedy & Heap
@@ -274,22 +272,6 @@ for tid in topo_order:
 - ✅ Practiced **Cycle Detection** using DFS on the dependency graph
 - ✅ Generated structured **CSV/JSON reports** programmatically
 - ✅ Built an interactive **HTML dashboard** for visualization
-
----
-
-## 🔗 GitHub Setup
-
-```bash
-git init
-git add .
-git commit -m "feat: initial Task Scheduler Optimization System"
-git remote add origin https://github.com/YOUR_USERNAME/task-scheduler-optimization
-git branch -M main
-git push -u origin main
-```
-
-**Recommended repo name:** `Task-Scheduler-Optimization-System`  
-**Topics/tags:** `dsa`, `algorithms`, `greedy`, `priority-queue`, `scheduling`, `python`, `topological-sort`, `graph-algorithms`, `course-project`
 
 ---
 
